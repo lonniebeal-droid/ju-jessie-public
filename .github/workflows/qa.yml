@@ -1,0 +1,21 @@
+name: Jessie Hub browser QA
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  playwright:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - name: Run browser QA against deployed site
+        run: npx playwright test
+        env:
+          BASE_URL: https://lonniebeal-droid.github.io/ju-jessie-public/
