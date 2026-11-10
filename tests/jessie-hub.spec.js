@@ -9,11 +9,13 @@ test('caller records default UNKNOWN and block verification without evidence met
   await page.locator('#person').fill('Synthetic Caller A');
   await page.getByRole('button',{name:'Save as UNKNOWN'}).click();
   await expect(page.getByText('Synthetic Caller A')).toBeVisible();
+  let alertMessage = '';
   page.once('dialog', async dialog => {
-    expect(dialog.message()).toContain('Source, verification date and next review required.');
+    alertMessage = dialog.message();
     await dialog.dismiss();
   });
   await page.locator('select').last().selectOption('VERIFIED');
+  expect(alertMessage).toContain('Source, verification date and next review required.');
   await expect(page.locator('select').last()).toHaveValue('UNKNOWN');
 });
 test('safe-to-confirm requires explicit fact plus source/date/review', async ({page}) => {
@@ -26,7 +28,7 @@ test('safe-to-confirm requires explicit fact plus source/date/review', async ({p
   await page.getByRole('button',{name:'Save as UNKNOWN'}).click();
   page.once('dialog', d=>d.accept());
   await page.locator('select').last().selectOption('SAFE TO CONFIRM');
-  await expect(page.getByText('SAFE TO CONFIRM',{exact:true})).toBeVisible();
+  await expect(page.locator('article .status')).toHaveText('SAFE TO CONFIRM');
 });
 test('source comparison requires summary, source excerpt and source reference', async ({page}) => {
   await page.getByRole('button',{name:'Source Comparison'}).click();
@@ -54,11 +56,13 @@ test('JU Master receipt is blocked until evidence, privacy and approval checks e
   await page.locator('#receipt').fill('TEST-RECEIPT-04');
   await page.locator('#reviewer').fill('QA');
   await page.locator('#date').fill('2026-11-09');
+  let blockedMessage = '';
   page.once('dialog', async dialog => {
-    expect(dialog.message()).toContain('BLOCKED: source, reviewer, date and approvals required.');
+    blockedMessage = dialog.message();
     await dialog.dismiss();
   });
   await page.getByRole('button',{name:'Prepare receipt (does not sync)'}).click();
+  expect(blockedMessage).toContain('BLOCKED: source, reviewer, date and approvals required.');
   await page.locator('#evidence').check(); await page.locator('#privacy').check(); await page.locator('#approve').check();
   await page.getByRole('button',{name:'Prepare receipt (does not sync)'}).click();
   await expect(page.getByText('NOT written to JU Master')).toBeVisible();
