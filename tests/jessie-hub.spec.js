@@ -18,6 +18,20 @@ test('caller records default UNKNOWN and block verification without evidence met
   expect(alertMessage).toContain('Source, verification date and next review required.');
   await expect(page.locator('select').last()).toHaveValue('UNKNOWN');
 });
+test('rejected verification restores persisted UNKNOWN selector', async ({page}) => {
+  await page.getByRole('button',{name:'Caller Context'}).click();
+  await page.locator('#person').fill('Synthetic Rejection Test');
+  await page.getByRole('button',{name:'Save as UNKNOWN'}).click();
+  let message = '';
+  page.once('dialog', async dialog => { message = dialog.message(); await dialog.dismiss(); });
+  await page.locator('article select').selectOption('VERIFIED');
+  expect(message).toContain('Source, verification date and next review required.');
+  await expect(page.locator('article select')).toHaveValue('UNKNOWN');
+  await expect(page.locator('article .status')).toHaveText('UNKNOWN');
+  await page.reload();
+  await page.getByRole('button',{name:'Caller Context'}).click();
+  await expect(page.locator('article select')).toHaveValue('UNKNOWN');
+});
 test('safe-to-confirm requires explicit fact plus source/date/review', async ({page}) => {
   await page.getByRole('button',{name:'Caller Context'}).click();
   await page.locator('#person').fill('Synthetic Caller B');
