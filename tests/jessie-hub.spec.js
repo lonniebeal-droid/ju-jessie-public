@@ -9,9 +9,12 @@ test('caller records default UNKNOWN and block verification without evidence met
   await page.locator('#person').fill('Synthetic Caller A');
   await page.getByRole('button',{name:'Save as UNKNOWN'}).click();
   await expect(page.getByText('Synthetic Caller A')).toBeVisible();
+  const dialogPromise = page.waitForEvent('dialog');
   await page.locator('select').last().selectOption('VERIFIED');
-  await expect(page.getByRole('dialog')).toHaveCount(0);
-  await expect(page.getByText('Source, verification date and next review required.')).toBeVisible();
+  const dialog = await dialogPromise;
+  expect(dialog.message()).toContain('Source, verification date and next review required.');
+  await dialog.dismiss();
+  await expect(page.locator('select').last()).toHaveValue('UNKNOWN');
 });
 test('safe-to-confirm requires explicit fact plus source/date/review', async ({page}) => {
   await page.getByRole('button',{name:'Caller Context'}).click();
@@ -51,8 +54,11 @@ test('JU Master receipt is blocked until evidence, privacy and approval checks e
   await page.locator('#receipt').fill('TEST-RECEIPT-04');
   await page.locator('#reviewer').fill('QA');
   await page.locator('#date').fill('2026-11-09');
+  const blockedDialogPromise = page.waitForEvent('dialog');
   await page.getByRole('button',{name:'Prepare receipt (does not sync)'}).click();
-  await expect(page.getByText('BLOCKED: source, reviewer, date and approvals required.')).toBeVisible();
+  const blockedDialog = await blockedDialogPromise;
+  expect(blockedDialog.message()).toContain('BLOCKED: source, reviewer, date and approvals required.');
+  await blockedDialog.dismiss();
   await page.locator('#evidence').check(); await page.locator('#privacy').check(); await page.locator('#approve').check();
   await page.getByRole('button',{name:'Prepare receipt (does not sync)'}).click();
   await expect(page.getByText('NOT written to JU Master')).toBeVisible();
